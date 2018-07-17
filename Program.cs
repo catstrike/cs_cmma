@@ -38,31 +38,32 @@ namespace CMMA
             // Allocating memory that can fit 2 cache lines
             var allocatedMemory = Marshal.AllocHGlobal(size);
             
-            // Allocated memory is aligned on 8 bytes, so if we add CacheLineSize bytes to the base address (let's say
-            // the address in the 1st cache line) we'll get the address in the 2nd cache line. Then we divide it
-            // by CacheLineSize to get the theoretical cache line number. We are using integer division so the number
-            // will be an integer. After we are multiplying the address by CacheLineSize to get the beginning of
-            // the 2nd cache line.
-            var cacheLineStart = ((long) allocatedMemory + CacheLineSize) / CacheLineSize * CacheLineSize;
+            // To get the start of the second cache line in our Allocated memory, we first calculate "cacheLineIndex"
+            // by divinding our memory pointer by "CacheLineSize" and adding 1.
+            var cacheLineIndex = (long) allocatedMemory / CacheLineSize + 1;
+            
+            // Then we multiply the resulting cacheLineIndex by CacheLineSize, this will be the starting location of
+            // the second cache line.
+            var cacheLineStartAddress = cacheLineIndex * CacheLineSize;
             
             Console.WriteLine("Running benchmark...");
             
-            var alignedResult = ReadWriteTest((int*) cacheLineStart,
+            var alignedResult = ReadWriteTest((int*) cacheLineStartAddress,
                 ReaderThread,
                 WriterThread
             );
             
-            var unalignedResult = ReadWriteTest((int*) (cacheLineStart + Offset),
+            var unalignedResult = ReadWriteTest((int*) (cacheLineStartAddress + Offset),
                 ReaderThread,
                 WriterThread
             );
 
-            var interlockedAlignedResult = ReadWriteTest((int*) cacheLineStart,
+            var interlockedAlignedResult = ReadWriteTest((int*) cacheLineStartAddress,
                 InterlockedReaderThread,
                 InterlockedWriterThread
             );
             
-            var interlockedUnalignedResult = ReadWriteTest((int*) (cacheLineStart + Offset),
+            var interlockedUnalignedResult = ReadWriteTest((int*) (cacheLineStartAddress + Offset),
                 InterlockedReaderThread,
                 InterlockedWriterThread
             );
